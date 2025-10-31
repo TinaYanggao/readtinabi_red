@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'book_screen.dart';
-import 'watchlist.dart';
+// import 'watchlist.dart'; // removed
 import 'profile.dart';
 import 'notes.dart';
 import 'weather_screen.dart';
@@ -18,7 +18,6 @@ class _MainToolsState extends State<MainTools> {
 
   final List<Widget> _pages = [
     const BookScreen(),
-    const WatchlistScreen(),
     const NotesScreen(),
     const WeatherScreen(),
     const ProfileScreen(),
@@ -32,6 +31,10 @@ class _MainToolsState extends State<MainTools> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedIndex >= _pages.length) {
+      _selectedIndex = 0; // reset if out of range
+    }
+
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
@@ -51,7 +54,7 @@ class _MainToolsState extends State<MainTools> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Color(0x66FF3B3B), // red glow
+              color: Color(0x66FF3B3B),
               blurRadius: 10,
               offset: Offset(0, -2),
               spreadRadius: 2,
@@ -66,7 +69,7 @@ class _MainToolsState extends State<MainTools> {
           elevation: 0,
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          selectedItemColor: Color(0xFFFF3B3B), // red accent
+          selectedItemColor: const Color(0xFFFF3B3B),
           unselectedItemColor: Colors.white60,
           selectedLabelStyle: GoogleFonts.montserrat(
             fontWeight: FontWeight.w600,
@@ -80,10 +83,6 @@ class _MainToolsState extends State<MainTools> {
             BottomNavigationBarItem(
               icon: Icon(Icons.menu_book_rounded),
               label: 'Library',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark_added_rounded),
-              label: 'Watchlist',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.edit_note_rounded),
@@ -102,4 +101,5 @@ class _MainToolsState extends State<MainTools> {
       ),
     );
   }
+
 }

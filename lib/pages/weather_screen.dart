@@ -66,8 +66,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
               final weather = snapshot.data!;
 
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
                     // ===== Search Bar =====
@@ -109,86 +110,84 @@ class _WeatherScreenState extends State<WeatherScreen> {
                     const SizedBox(height: 24),
 
                     // ===== Main Weather Card =====
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C1E).withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6))
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              weather.cityName,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 12),
-                            Image.network(
-                              'https://openweathermap.org/img/wn/${weather.icon}@4x.png',
-                              width: 120,
-                              height: 120,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.wb_cloudy, size: 100, color: Colors.white),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "${weather.temperature.toStringAsFixed(1)}°C",
-                              style: const TextStyle(
-                                  color: Color(0xFFB71C1C),
-                                  fontSize: 56,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              weather.description.toUpperCase(),
-                              style: const TextStyle(color: Colors.white70, fontSize: 18),
-                            ),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C1E).withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6))
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            weather.cityName,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          Image.network(
+                            'https://openweathermap.org/img/wn/${weather.icon}@4x.png',
+                            width: 120,
+                            height: 120,
+                            errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.wb_cloudy, size: 100, color: Colors.white),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "${weather.temperature.toStringAsFixed(1)}°C",
+                            style: const TextStyle(
+                                color: Color(0xFFB71C1C),
+                                fontSize: 56,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            weather.description.toUpperCase(),
+                            style: const TextStyle(color: Colors.white70, fontSize: 18),
+                          ),
 
-                            const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                            // ===== Today & 10-Day Forecast =====
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          // ===== Today & 10-Hour Forecast =====
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _forecastSmall(weather.icon, "Today", weather.temperature.toStringAsFixed(0)),
+                              _forecastSmall(weather.icon, "+3h", "—"),
+                              _forecastSmall(weather.icon, "+6h", "—"),
+                              _forecastSmall(weather.icon, "+9h", "—"),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // ===== 24-Hour Forecast Line =====
+                          Container(
+                            height: 60,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1C1C1E).withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _forecastSmall(weather.icon, "Today", weather.temperature.toStringAsFixed(0)),
-                                _forecastSmall(weather.icon, "+3h", "—"),
-                                _forecastSmall(weather.icon, "+6h", "—"),
-                                _forecastSmall(weather.icon, "+9h", "—"),
+                                Text("${weather.temperature.toStringAsFixed(0)}°",
+                                    style: const TextStyle(color: Colors.white)),
+                                Text("${weather.temperature.toStringAsFixed(0)}°",
+                                    style: const TextStyle(color: Colors.white)),
+                                Text("${weather.temperature.toStringAsFixed(0)}°",
+                                    style: const TextStyle(color: Colors.white)),
                               ],
                             ),
-
-                            const SizedBox(height: 24),
-
-                            // ===== 24-Hour Forecast Line =====
-                            Container(
-                              height: 60,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1C1C1E).withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  Text("${weather.temperature.toStringAsFixed(0)}°",
-                                      style: const TextStyle(color: Colors.white)),
-                                  Text("${weather.temperature.toStringAsFixed(0)}°",
-                                      style: const TextStyle(color: Colors.white)),
-                                  Text("${weather.temperature.toStringAsFixed(0)}°",
-                                      style: const TextStyle(color: Colors.white)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

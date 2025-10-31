@@ -1,168 +1,99 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-class BookDetailScreen extends StatelessWidget {
+class BookDetailScreen extends StatefulWidget {
   final Map book;
+  final VoidCallback onBack;
 
-  const BookDetailScreen({super.key, required this.book});
+  const BookDetailScreen({
+    super.key,
+    required this.book,
+    required this.onBack,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F1D38),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1D38),
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          book['library'] ?? "Book",
-          style: const TextStyle(
-            color: Color(0xFFFFD369),
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
+  State<BookDetailScreen> createState() => _BookDetailScreenState();
+}
+
+class _BookDetailScreenState extends State<BookDetailScreen> {
+  late Map book; // mutable copy of the book
+  late TextEditingController _descriptionController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create a copy of the book for safe editing
+    book = Map.from(widget.book);
+    _descriptionController = TextEditingController(text: book['description'] ?? '');
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _editComment() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final TextEditingController editController =
+        TextEditingController(text: book['description'] ?? '');
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Edit Comment",
+            style: TextStyle(color: Colors.white),
           ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // ===== Book Cover =====
-            Container(
-              height: 230,
-              width: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: book['cover'] != null
-                    ? DecorationImage(
-                  image: FileImage(File(book['cover'])),
-                  fit: BoxFit.cover,
-                )
-                    : null,
-                color: const Color(0xFF162C55),
-              ),
-              child: book['cover'] == null
-                  ? const Center(
-                child: Icon(Icons.menu_book,
-                    size: 80, color: Colors.white54),
-              )
-                  : null,
+          content: TextField(
+            controller: editController,
+            maxLines: 5,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: "Write your thoughts about this book...",
+              hintStyle: TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Color(0xFF121212),
+              border: OutlineInputBorder(),
             ),
-
-            const SizedBox(height: 16),
-
-            // ===== Title & Author =====
-            Text(
-              (book['title'] ?? "UNTITLED").toString().toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Colors.white)),
             ),
-            if (book['author'] != null)
-              Text(
-                book['author'],
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
+            TextButton(
+              onPressed: () async {
+                final box = Hive.box('books');
+                // Update the local book map
+                setState(() {
+                  book['description'] = editController.text;
+                  _descriptionController.text = editController.text;
+                });
 
-            const SizedBox(height: 24),
+                // Find the key of the book in Hive
+                final key = box.keys.firstWhere(
+                      (k) => box.get(k) == widget.book,
+                  orElse: () => null,
+                );
 
-            // ===== Description Card =====
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF162C55),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Center(
-                      child: Text(
-                        "BOOK DETAILS",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                if (key != null) {
+                  await box.put(key, book); // Save the updated book
+                }
 
-                    Text(
-                      book['description'] ?? "No description available.",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // ===== Buttons =====
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0F1D38),
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                            ),
-                            onPressed: () => _confirmDelete(context),
-                            icon: const Icon(Icons.delete, color: Colors.white),
-                            label: const Text(
-                              "DELETE",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFD369),
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                            ),
-                            onPressed: () {
-                              // TODO: implement edit logic
-                            },
-                            icon: const Icon(Icons.edit, color: Colors.black),
-                            label: const Text(
-                              "EDIT",
-                              style: TextStyle(color: Colors.black),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                Navigator.pop(ctx);
+              },
+              child: const Text(
+                "Save",
+                style: TextStyle(color: Color(0xFFB71C1C)),
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -170,7 +101,7 @@ class BookDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F1D38),
+        backgroundColor: const Color(0xFF1C1C1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           "Delete Book",
@@ -189,7 +120,7 @@ class BookDetailScreen extends StatelessWidget {
             onPressed: () async {
               final box = Hive.box('books');
               final key = box.keys.firstWhere(
-                    (k) => box.get(k) == book,
+                    (k) => box.get(k) == widget.book,
                 orElse: () => null,
               );
 
@@ -202,10 +133,254 @@ class BookDetailScreen extends StatelessWidget {
             },
             child: const Text(
               "Delete",
-              style: TextStyle(color: Color(0xFFFFD369)),
+              style: TextStyle(color: Color(0xFFB71C1C)),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Back Button + Optional Search
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFFB71C1C)),
+                      onPressed: widget.onBack,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search all books...',
+                          filled: true,
+                          fillColor: const Color(0xFF1C1C1E),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFB71C1C)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          hintStyle: const TextStyle(color: Colors.white54),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Divider
+              Container(height: 2, width: double.infinity, color: const Color(0xFFB71C1C)),
+              const SizedBox(height: 12),
+
+              // Book Image + Title + Author
+              Center(
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: book['cover'] != null
+                              ? ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Image.file(
+                              File(book['cover']),
+                              width: 550,
+                              height: 260,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                              : Container(
+                            width: 550,
+                            height: 260,
+                            color: const Color(0xFF1C1C1E),
+                          ),
+                        ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: book['cover'] != null
+                              ? Image.file(
+                            File(book['cover']),
+                            width: 150,
+                            height: 220,
+                            fit: BoxFit.cover,
+                          )
+                              : const Icon(Icons.menu_book, size: 100, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      book['title']?.toString().toUpperCase() ?? "UNTITLED",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    if (book['author'] != null)
+                      Text(
+                        book['author'],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Divider
+              const SizedBox(height: 12),
+              Container(height: 2, width: double.infinity, color: Color(0xFFB71C1C)),
+              const SizedBox(height: 12),
+
+              // Book Info Row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // Pages
+                    Column(
+                      children: [
+                        const Icon(Icons.menu_book_rounded, color: Color(0xFFB71C1C)),
+                        const SizedBox(height: 4),
+                        Text('${book['pages'] ?? 0}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        const Text("Pages", style: TextStyle(color: Colors.white70)),
+                      ],
+                    ),
+
+                    // Rating
+                    Column(
+                      children: [
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < (book['rating'] ?? 0)
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: index < (book['rating'] ?? 0)
+                                  ? const Color(0xFFB71C1C)
+                                  : Colors.white24,
+                              size: 24,
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text("My Rating", style: TextStyle(color: Colors.white70)),
+                      ],
+                    ),
+
+                    // Language
+                    Column(
+                      children: [
+                        const Icon(Icons.language, color: Color(0xFFB71C1C)),
+                        const SizedBox(height: 4),
+                        Text(book['language'] ?? "-",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.white)),
+                        const Text("Language", style: TextStyle(color: Colors.white70)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Divider
+              const SizedBox(height: 12),
+              Container(height: 2, width: double.infinity, color: Color(0xFFB71C1C)),
+              const SizedBox(height: 12),
+
+              // Buttons Row: Edit & Delete
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFB71C1C),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50)),
+                        ),
+                        onPressed: _editComment,
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text(
+                          "EDIT",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1C1C1E),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50)),
+                        ),
+                        onPressed: () => _confirmDelete(context),
+                        icon: const Icon(Icons.delete, color: Colors.white),
+                        label: const Text(
+                          "DELETE",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Divider
+              const SizedBox(height: 12),
+              Container(height: 2, width: double.infinity, color: Color(0xFFB71C1C)),
+              const SizedBox(height: 12),
+
+              // Book Description
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C1C1E),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _descriptionController.text,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
       ),
     );
   }

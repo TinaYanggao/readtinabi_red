@@ -50,6 +50,54 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
+  void _editNoteDialog(Note note) {
+    final TextEditingController _editController =
+    TextEditingController(text: note.content);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title:
+          const Text("Edit Comment", style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: _editController,
+            maxLines: 5,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: "Write your comment...",
+              hintStyle: TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Color(0xFF121212),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () {
+                note.content = _editController.text;
+                note.date = DateTime.now();
+                note.save();
+                setState(() {});
+                Navigator.pop(ctx);
+              },
+              child: const Text(
+                "Save",
+                style: TextStyle(color: Color(0xFFB71C1C)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final notesBox = Hive.box<Note>('notes');
@@ -77,7 +125,7 @@ class _NotesScreenState extends State<NotesScreen> {
               children: [
                 const SizedBox(height: 16),
 
-                // --- Aesthetic Header: Divider + Red "Journal" + Divider ---
+                // --- Header ---
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40.0),
                   child: Column(
@@ -88,7 +136,7 @@ class _NotesScreenState extends State<NotesScreen> {
                         child: Text(
                           "Journal",
                           style: TextStyle(
-                            color: Color(0xFFE5203A), // red font
+                            color: Color(0xFFE5203A),
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
@@ -117,7 +165,8 @@ class _NotesScreenState extends State<NotesScreen> {
                     decoration: InputDecoration(
                       hintText: "Search notes...",
                       hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                      prefixIcon:
+                      const Icon(Icons.search, color: Colors.white70),
                       filled: true,
                       fillColor: const Color(0xFF1C1C1E),
                       border: OutlineInputBorder(
@@ -136,7 +185,8 @@ class _NotesScreenState extends State<NotesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: GridView.builder(
                       itemCount: notes.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
@@ -146,6 +196,7 @@ class _NotesScreenState extends State<NotesScreen> {
                         final note = notes[index];
                         return GestureDetector(
                           onTap: () => _openNoteDetail(note, index),
+                          onLongPress: () => _editNoteDialog(note),
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(

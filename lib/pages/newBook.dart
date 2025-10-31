@@ -32,10 +32,47 @@ class _NewBookScreenState extends State<NewBookScreen> {
     }
   }
 
+  void _saveBook() {
+    final bookBox = Hive.box('books');
+
+    if (titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Title cannot be empty")),
+      );
+      return;
+    }
+
+    bookBox.add({
+      'title': titleController.text.trim(),
+      'author': authorController.text.trim(),
+      'genre': genreController.text.trim(),
+      'language': languageController.text.trim(),
+      'pages': pagesController.text.trim(),
+      'description': descriptionController.text.trim(),
+      'rating': rating,
+      'cover': _cover?.path,
+    });
+
+    Navigator.pop(context);
+  }
+
+  void _deleteInputs() {
+    setState(() {
+      titleController.clear();
+      authorController.clear();
+      genreController.clear();
+      languageController.clear();
+      pagesController.clear();
+      descriptionController.clear();
+      rating = 0;
+      _cover = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Updated dark background
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(18),
@@ -47,14 +84,14 @@ class _NewBookScreenState extends State<NewBookScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white70),
+                    icon:
+                    const Icon(Icons.arrow_back_ios, color: Colors.white70),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Text(
                     "NEW BOOK",
                     style: GoogleFonts.playfairDisplay(
-                      color: const Color(0xFFB71C1C), // Deep red accent
+                      color: const Color(0xFFB71C1C),
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -165,35 +202,7 @@ class _NewBookScreenState extends State<NewBookScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // --- LIBRARY BUTTON ---
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFB71C1C),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          shadowColor:
-                          const Color(0xFFB71C1C).withOpacity(0.4),
-                          elevation: 4,
-                        ),
-                        onPressed: () => _showLibraryBottomSheet(context),
-                        icon: const Icon(Icons.library_add),
-                        label: Text(
-                          "Add to Library",
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-
-                    // --- RATING ---
+                    // --- RATE IT ---
                     Row(
                       children: [
                         Text(
@@ -226,11 +235,10 @@ class _NewBookScreenState extends State<NewBookScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // --- DESCRIPTION ---
+                    // --- COMMENT / DESCRIPTION ---
                     TextField(
                       controller: descriptionController,
                       maxLines: 5,
-                      maxLength: 1000,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: "Write your thoughts about this book...",
@@ -249,6 +257,52 @@ class _NewBookScreenState extends State<NewBookScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // --- SAVE & DELETE BUTTONS ---
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _saveBook,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFB71C1C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              "SAVE",
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _deleteInputs,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[800],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              "DELETE",
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -259,7 +313,6 @@ class _NewBookScreenState extends State<NewBookScreen> {
     );
   }
 
-  /// --- REUSABLE TEXT FIELD ---
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -284,134 +337,6 @@ class _NewBookScreenState extends State<NewBookScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-    );
-  }
-
-  /// --- LIBRARY SELECTION / CREATION ---
-  void _showLibraryBottomSheet(BuildContext context) {
-    final bookBox = Hive.box('books');
-    final TextEditingController libraryController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF121212),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) {
-        List<String> libraries = [];
-        for (int i = 0; i < bookBox.length; i++) {
-          final book = bookBox.getAt(i);
-          if (book['library'] != null) libraries.add(book['library']);
-        }
-        libraries = libraries.toSet().toList();
-        String? selectedLibrary;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Choose or Create a Library",
-                    style: GoogleFonts.playfairDisplay(
-                      color: const Color(0xFFB71C1C),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (libraries.isNotEmpty)
-                    DropdownButtonFormField<String>(
-                      dropdownColor: const Color(0xFF1C1C1E),
-                      value: selectedLibrary,
-                      hint: const Text(
-                        "Select library",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      items: libraries
-                          .map((lib) => DropdownMenuItem(
-                        value: lib,
-                        child: Text(lib,
-                            style:
-                            const TextStyle(color: Colors.white)),
-                      ))
-                          .toList(),
-                      onChanged: (val) {
-                        setModalState(() {
-                          selectedLibrary = val;
-                        });
-                      },
-                    ),
-
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: libraryController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: "Or create new library",
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      filled: true,
-                      fillColor: Colors.black26,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                            color: Color(0xFFB71C1C), width: 1.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB71C1C),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      String libraryName = libraryController.text.trim().isNotEmpty
-                          ? libraryController.text.trim()
-                          : (selectedLibrary ?? "BEST RATED");
-
-                      bookBox.add({
-                        'title': titleController.text,
-                        'author': authorController.text,
-                        'genre': genreController.text,
-                        'language': languageController.text,
-                        'pages': pagesController.text,
-                        'description': descriptionController.text,
-                        'rating': rating,
-                        'cover': _cover?.path,
-                        'library': libraryName,
-                      });
-
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      "Save to Library",
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
