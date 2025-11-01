@@ -50,7 +50,7 @@ class _BookScreenState extends State<BookScreen> {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFB71C1C),
+              color: const Color(0xFFB71C1C).withOpacity(0.6),
               blurRadius: 18,
               spreadRadius: 3,
             ),
@@ -82,7 +82,7 @@ class _BookScreenState extends State<BookScreen> {
                     const SizedBox(height: 12),
                     Text(
                       "No books yet — add one below!",
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.poppins(
                         color: Colors.white54,
                         fontSize: 15,
                       ),
@@ -103,17 +103,18 @@ class _BookScreenState extends State<BookScreen> {
 
             return ListView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(top: 25),
+              padding: const EdgeInsets.only(top: 25, bottom: 80),
               children: [
                 // Header Title
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     "Your Personal Library",
-                    style: GoogleFonts.playfairDisplay(
+                    style: GoogleFonts.cormorantGaramond(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -122,9 +123,9 @@ class _BookScreenState extends State<BookScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     "Dive into stories that move you.",
-                    style: GoogleFonts.montserrat(
+                    style: GoogleFonts.poppins(
                       color: Colors.white70,
-                      fontSize: 13,
+                      fontSize: 14,
                     ),
                   ),
                 ),
@@ -140,25 +141,45 @@ class _BookScreenState extends State<BookScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Genre Header
+                        // Genre Header with side lines
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            genre.toUpperCase(),
-                            style: GoogleFonts.playfairDisplay(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 1,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                genre.toUpperCase(),
+                                style: GoogleFonts.cormorantGaramond(
+                                  color: const Color(0xFFB71C1C),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Container(
+                                  height: 1,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 18),
 
                         // Horizontal book list
                         SizedBox(
                           height: 240,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
                             itemCount: books.length,
                             itemBuilder: (context, index) {
                               final book = books[index];
@@ -181,7 +202,7 @@ class _BookScreenState extends State<BookScreen> {
                                   margin:
                                   const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF141414),
+                                    color: const Color(0xFF1C1C1E),
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
@@ -208,7 +229,9 @@ class _BookScreenState extends State<BookScreen> {
                                             image: (book['cover'] != null &&
                                                 File(book['cover'])
                                                     .existsSync())
-                                                ? FileImage(File(book['cover']))
+                                                ? FileImage(
+                                              File(book['cover']),
+                                            )
                                                 : const AssetImage(
                                                 "assets/placeholder.jpg")
                                             as ImageProvider,
@@ -221,13 +244,11 @@ class _BookScreenState extends State<BookScreen> {
                                       Expanded(
                                         child: Center(
                                           child: Padding(
-                                            padding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 6),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 6),
                                             child: Text(
                                               book['title'] ?? "Untitled",
-                                              style: GoogleFonts.montserrat(
+                                              style: GoogleFonts.poppins(
                                                 color: Colors.white,
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,

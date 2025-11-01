@@ -132,4 +132,3 @@ class ReadReflectLogo extends StatelessWidget {
     );
   }
 }
-

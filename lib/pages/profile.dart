@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,17 +31,36 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   bool isEditing = false;
   late AnimationController _animationController;
+  late Box _profileBox;
 
   @override
   void initState() {
     super.initState();
-    _usernameController.text = username;
-    _descController.text = description;
-
+    _initializeHive();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+  }
+
+  Future<void> _initializeHive() async {
+    _profileBox = await Hive.openBox('profileBox');
+
+    // Load saved data if available
+    setState(() {
+      username = _profileBox.get('username', defaultValue: username);
+      description = _profileBox.get('description', defaultValue: description);
+      String? profilePath = _profileBox.get('profileImage');
+      String? coverPath = _profileBox.get('coverImage');
+      if (profilePath != null && File(profilePath).existsSync()) {
+        _profileImage = File(profilePath);
+      }
+      if (coverPath != null && File(coverPath).existsSync()) {
+        _coverImage = File(coverPath);
+      }
+      _usernameController.text = username;
+      _descController.text = description;
+    });
   }
 
   @override
@@ -68,6 +88,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       description = _descController.text;
       isEditing = false;
     });
+
+    // Save to Hive
+    _profileBox.put('username', username);
+    _profileBox.put('description', description);
+    if (_profileImage != null) _profileBox.put('profileImage', _profileImage!.path);
+    if (_coverImage != null) _profileBox.put('coverImage', _coverImage!.path);
+
     _animationController.reverse();
   }
 
@@ -89,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1C1C1E), // Dark gray/black
+              Color(0xFF1C1C1E),
               Color(0xFF121212),
             ],
           ),
@@ -132,16 +159,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                               fit: StackFit.expand,
                               children: [
                                 ImageFiltered(
-                                  imageFilter:
-                                  ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                                   child: _coverImage != null
                                       ? Image.file(
                                     _coverImage!,
                                     fit: BoxFit.cover,
                                   )
-                                      : Container(
-                                    color: const Color(0xFF1C1C1E),
-                                  ),
+                                      : Container(color: const Color(0xFF1C1C1E)),
                                 ),
                                 if (isEditing)
                                   const Positioned(
@@ -172,8 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               Container(
                                 decoration: BoxDecoration(
-                                  border:
-                                  Border.all(color: Colors.white, width: 4.5),
+                                  border: Border.all(color: Colors.white, width: 4.5),
                                   borderRadius: BorderRadius.circular(100),
                                   boxShadow: [
                                     BoxShadow(
@@ -206,8 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   child: CircleAvatar(
                                     radius: 16,
                                     backgroundColor: Color(0xFFB71C1C),
-                                    child: Icon(Icons.edit,
-                                        color: Colors.white, size: 16),
+                                    child: Icon(Icons.edit, color: Colors.white, size: 16),
                                   ),
                                 ),
                             ],
@@ -221,11 +243,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                   // ===== PROFILE CARD =====
                   Padding(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 22),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(24),
@@ -305,18 +325,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   child: ElevatedButton(
                                     onPressed: _saveProfile,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      const Color(0xFFB71C1C),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      backgroundColor: const Color(0xFFB71C1C),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                       ),
                                     ),
                                     child: const Text("Save",
-                                        style: TextStyle(
-                                            color: Colors.white)),
+                                        style: TextStyle(color: Colors.white)),
                                   ),
                                 ),
                                 const SizedBox(width: 15),
@@ -325,16 +341,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     onPressed: _cancelEdit,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.grey,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                       ),
                                     ),
                                     child: const Text("Cancel",
-                                        style: TextStyle(
-                                            color: Colors.white)),
+                                        style: TextStyle(color: Colors.white)),
                                   ),
                                 ),
                               ],
@@ -351,40 +364,31 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       _animationController.forward();
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      const Color(0xFFB71C1C),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      backgroundColor: const Color(0xFFB71C1C),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                       ),
                                     ),
                                     child: const Text("Edit",
-                                        style: TextStyle(
-                                            color: Colors.white)),
+                                        style: TextStyle(color: Colors.white)),
                                   ),
                                 ),
                                 const SizedBox(width: 15),
                                 Expanded(
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      Navigator.pushReplacementNamed(
-                                          context, '/');
+                                      Navigator.pushReplacementNamed(context, '/');
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      const Color(0xFFB71C1C),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      backgroundColor: const Color(0xFFB71C1C),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                       ),
                                     ),
                                     child: const Text("Log Out",
-                                        style: TextStyle(
-                                            color: Colors.white)),
+                                        style: TextStyle(color: Colors.white)),
                                   ),
                                 ),
                               ],
